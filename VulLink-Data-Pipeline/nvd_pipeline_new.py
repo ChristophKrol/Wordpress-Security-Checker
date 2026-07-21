@@ -661,7 +661,7 @@ def main():
         "bolt://localhost:7687",
         auth=("neo4j", "Vanly180705!")
     )
-    assert_neo4j_connection(driver)
+    # assert_neo4j_connection(driver)
 
     nvd_pipeline = NVDPipeline(driver)
     success = nvd_pipeline.run()

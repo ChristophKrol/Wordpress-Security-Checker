@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser(
     description="Clean VulnerabilityNodes CSV for Neo4j import"
 )
 parser.add_argument(
-    "datadir",
+    "--datadir",
     type=str,
     help="Directory containing VulnerabilityNodes.csv"
 )
@@ -22,7 +22,7 @@ OUTPUT = DATADIR / "VulnerabilityNodes_clean.csv"
 
 # -------- expected schema (STRICT) --------
 EXPECTED_COLUMNS = [
-    'cveID', 'publishedDate', 'description_value', 'num_reference',
+    'cveID', 'publishedDate', 'description', 'num_reference',
     'v2version', 'v2baseScore', 'v2accessVector', 'v2accessComplexity',
     'v2authentication', 'v2confidentialityImpact', 'v2integrityImpact',
     'v2availabilityImpact', 'v2vectorString', 'v2impactScore',
