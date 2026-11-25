@@ -29,6 +29,7 @@ The project is organized into four primary components.
 | **VulLink-API/** | FastAPI backend exposing graph query, subgraph retrieval, embedding access, and analytics endpoints. |
 | **VulLink-Visualizer/** | React-based frontend for graph exploration, Cypher querying, and data export. |
 | **VulLink-Data-Pipeline/** | ETL pipeline responsible for vulnerability ingestion, normalization, graph construction, and database updates. |
+| **VulLink-Crawler/** | Standalone WordPress fingerprinting crawler; matches detected core/plugin/theme/server versions against VulLink via the API. See its README. |
 
 ## Directory Layout
 
@@ -39,6 +40,7 @@ VulLink/
 ├── VulLink/
 ├── VulLink-API/
 ├── VulLink-Data-Pipeline/
+├── VulLink-Crawler/
 ├── VulLink-Visualizer/
 ├── .env.development
 └── docker-compose.yml
