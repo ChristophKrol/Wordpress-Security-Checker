@@ -21,6 +21,11 @@ def test_default_scan_fingerprints_fake_site(fake_site):
     assert v["server:apache"] == "2.4.57"
     assert result.components["server:apache"].notes      # Ubuntu backport warning
     assert "contact-form-7/v1" in result.rest_namespaces
+    # unmapped REST namespace confirmed via readme.txt; UTF-8 without charset header decoded correctly
+    assert v["plugin:code-snippets"] == "3.6.8"
+    assert result.components["plugin:code-snippets"].name == "Code Snippets – Smart Snippets"
+    assert "plugin:not-a-plugin" not in result.components and "plugin:mcp" not in result.components
+    assert result.components["plugin:elementor"].name == "Elementor"   # no version in the name
     assert result.findings == [] and result.mode == "default"
     # default mode never touches aggressive paths
     assert result.requests_made < 20

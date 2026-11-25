@@ -30,6 +30,7 @@ The project is organized into four primary components.
 | **VulLink-Visualizer/** | React-based frontend for graph exploration, Cypher querying, and data export. |
 | **VulLink-Data-Pipeline/** | ETL pipeline responsible for vulnerability ingestion, normalization, graph construction, and database updates. |
 | **VulLink-Crawler/** | Standalone WordPress fingerprinting crawler; matches detected core/plugin/theme/server versions against VulLink via the API. See its README. |
+| **VulLink-Collector/** | Server-side inventory (single PHP file run with WP-CLI): exact versions incl. inactive plugins, database server, packages, integrity and configuration checks. Matched with `wpcrawler match`. |
 
 ## Directory Layout
 
@@ -41,6 +42,7 @@ VulLink/
 ├── VulLink-API/
 ├── VulLink-Data-Pipeline/
 ├── VulLink-Crawler/
+├── VulLink-Collector/
 ├── VulLink-Visualizer/
 ├── .env.example
 └── docker-compose.yml
@@ -141,6 +143,22 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"     # once
 
 Only scan sites you own or have permission to test. `--aggressive --authorized` adds plugin enumeration
 and configuration checks. All options: `.venv/bin/wpcrawler scan --help` and `VulLink-Crawler/README.md`.
+
+## 5. Check a Server from the Inside (Collector)
+
+With SSH access, the collector gives exact versions (including inactive plugins and the database server)
+plus integrity and configuration checks:
+
+```bash
+# on your machine: runs over SSH, nothing is stored on the server (WP-CLI required there)
+cd VulLink-Collector
+ssh user@server 'wp --path=/var/www/html eval-file -' < collect.php > inventory.json
+cd ../VulLink-Crawler && .venv/bin/wpcrawler match ../VulLink-Collector/inventory.json
+```
+
+Never put `collect.php` or an inventory inside the website folder; they would be downloadable.
+
+Details and alternatives: `VulLink-Collector/README.md`. The inventory contains sensitive data; don't commit or share it.
 
 ---
 
@@ -447,6 +465,7 @@ If you use VulLink in your research, please cite:
 ```
 
 ---
+
 
 # License
 

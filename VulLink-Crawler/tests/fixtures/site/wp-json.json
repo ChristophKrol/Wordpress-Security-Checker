@@ -1,1 +1,1 @@
-{"name":"Test","namespaces":["oembed/1.0","contact-form-7/v1","wc/v3","yoast/v1","wp/v2","some-unknown/v1"]}
+{"name": "Test", "namespaces": ["oembed/1.0", "contact-form-7/v1", "wc/v3", "yoast/v1", "wp/v2", "some-unknown/v1", "code-snippets/v1", "v1", "mcp", "not-a-plugin/v1"]}

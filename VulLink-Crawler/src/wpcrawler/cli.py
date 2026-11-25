@@ -4,6 +4,7 @@
     wpcrawler scan https://example.com --json out.json
     wpcrawler scan https://example.com --aggressive --authorized --plugin-list slugs.txt
     wpcrawler export-slugs --top 500 -o slugs.txt           # plugin list for enumeration, from VulLink
+    wpcrawler match inventory.json                          # server inventory from VulLink-Collector
 """
 from __future__ import annotations
 
@@ -59,6 +60,27 @@ def cmd_scan(args: argparse.Namespace) -> int:
     return 0 if not result.errors or result.is_wordpress else 1
 
 
+def cmd_match(args: argparse.Namespace) -> int:
+    from . import inventory
+    try:
+        result = inventory.load(args.inventory)
+    except (OSError, ValueError) as exc:
+        print(f"Cannot read inventory: {exc}", file=sys.stderr)
+        return 2
+    matched = False
+    try:
+        vullink.match(result, args.api)
+        matched = True
+    except Exception as exc:
+        result.errors.append(f"VulLink matching failed: {exc}")
+    if args.json:
+        Path(args.json).write_text(json.dumps(result.to_dict(), indent=2, default=str))
+    print(report.render(result, matched))
+    if args.json:
+        print(f"\nJSON written to {args.json}")
+    return 0 if matched else 1
+
+
 def cmd_export_slugs(args: argparse.Namespace) -> int:
     client = vullink.VulLinkClient(args.api)
     rows = client.query(
@@ -94,6 +116,12 @@ def main(argv=None) -> int:
     s.add_argument("--no-match", action="store_true", help="fingerprint only, skip VulLink lookup")
     s.add_argument("--api", default=vullink.DEFAULT_API_URL, help=f"VulLink API (default {vullink.DEFAULT_API_URL})")
     s.set_defaults(func=cmd_scan)
+
+    m = sub.add_parser("match", help="match a server inventory (VulLink-Collector output) against VulLink")
+    m.add_argument("inventory", help="inventory.json produced by: wp eval-file collect.php")
+    m.add_argument("--json", metavar="FILE", help="write the full result as JSON")
+    m.add_argument("--api", default=vullink.DEFAULT_API_URL)
+    m.set_defaults(func=cmd_match)
 
     e = sub.add_parser("export-slugs", help="export the most vulnerable plugin slugs from VulLink")
     e.add_argument("--top", type=int, default=500)

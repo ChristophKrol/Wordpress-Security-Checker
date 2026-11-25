@@ -65,7 +65,10 @@ class Fetcher:
         except requests.RequestException as exc:
             self.errors.append(f"{url}: {exc.__class__.__name__}: {exc}")
             return None
-        encoding = resp.encoding or "utf-8"
+        # requests falls back to ISO-8859-1 for text/* without a charset (RFC 2616), which garbles the
+        # UTF-8 that WordPress serves (readme.txt, style.css). Only trust an explicitly declared charset.
+        declared = "charset=" in resp.headers.get("content-type", "").lower()
+        encoding = (resp.encoding if declared else None) or "utf-8"
         return Response(url=resp.url, status=resp.status_code,
                         headers={k.lower(): v for k, v in resp.headers.items()},
                         text=body.decode(encoding, errors="replace"))

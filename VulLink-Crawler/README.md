@@ -33,6 +33,9 @@ python3 -m venv .venv
 
 # fingerprint only, no VulLink needed
 .venv/bin/wpcrawler scan https://example.com --no-match
+
+# match a server-side inventory from VulLink-Collector (wp eval-file collect.php > inventory.json)
+.venv/bin/wpcrawler match inventory.json
 ```
 
 Politeness defaults: 1 s between requests (`--delay`), max 300 requests per scan (`--max-requests`),
@@ -74,7 +77,8 @@ Caveats:
 
 ```
 src/wpcrawler/
-  cli.py              command line (scan, export-slugs)
+  cli.py              command line (scan, match, export-slugs)
+  inventory.py        loads VulLink-Collector inventories as scan results
   scanner.py          orchestration of one scan
   http.py             polite single-host fetcher (delay, budget, size cap)
   models.py           Component / Evidence / Finding / ScanResult

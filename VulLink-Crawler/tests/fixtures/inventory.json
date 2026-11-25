@@ -1,0 +1,24 @@
+{
+  "schema": "vullink-inventory/1",
+  "collectedAt": "2026-11-25T12:00:00+00:00",
+  "collector": "VulLink-Collector/0.1",
+  "site": {"url": "https://example.com", "path": "/var/www/html/", "multisite": false, "locale": "de_DE"},
+  "components": [
+    {"type": "core", "slug": "wordpress", "name": "WordPress", "version": "6.9.1", "source": "wp-includes/version.php",
+     "details": {"status": "active", "updateVersion": "6.9.12"}, "notes": []},
+    {"type": "plugin", "slug": "contact-form-7", "name": "Contact Form 7", "version": "5.8.4", "source": "wp plugin list",
+     "details": {"status": "inactive", "updateVersion": "6.2.5"}, "notes": ["Inactive, but its files are still on the server."]},
+    {"type": "server", "slug": "mariadb", "name": "MariaDB", "version": "10.11.6", "source": "SELECT VERSION()",
+     "details": {"raw": "10.11.6-MariaDB-0+deb12u1"}, "notes": []},
+    {"type": "plugin", "slug": "../../etc/passwd", "name": "evil", "version": "1.0", "source": "x", "details": {}, "notes": []},
+    {"type": "unknown", "slug": "x", "name": "x", "version": "1", "source": "x", "details": {}, "notes": []},
+    {"type": "plugin", "slug": "weird-version", "name": "W", "version": "1.0'; DROP", "source": "x", "details": {}, "notes": []}
+  ],
+  "packages": [{"manager": "dpkg", "name": "mariadb-server", "version": "1:10.11.6-0+deb12u1"}],
+  "libraries": [{"ecosystem": "composer", "name": "phpmailer/phpmailer", "version": "6.8.0", "in": "plugin:some-plugin"}],
+  "findings": [{"id": "default-salts", "title": "Authentication keys/salts are missing or still the defaults",
+                "severity": "high", "url": "/var/www/html/wp-config.php", "detail": "AUTH_KEY"}],
+  "integrity": {"core": {"ok": true, "messages": []}, "plugins": {"ok": true, "mismatches": [], "messages": []}, "phpInUploads": []},
+  "environment": {"os": {"id": "debian", "version_id": "12"}},
+  "errors": []
+}

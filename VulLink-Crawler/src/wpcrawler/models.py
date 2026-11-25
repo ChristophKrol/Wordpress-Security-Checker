@@ -24,6 +24,7 @@ class Component:
     evidence: List[Evidence] = field(default_factory=list)
     vulnerabilities: List[Dict[str, Any]] = field(default_factory=list)  # filled by matching
     notes: List[str] = field(default_factory=list)
+    details: Dict[str, Any] = field(default_factory=dict)  # e.g. status/updateVersion from a server inventory
 
     @property
     def key(self) -> str:
@@ -65,6 +66,7 @@ class Component:
             "versionConflicts": self.version_conflicts,
             "evidence": [asdict(e) for e in self.evidence],
             "notes": self.notes,
+            "details": self.details,
             "vulnerabilities": self.vulnerabilities,
         }
 
@@ -91,6 +93,7 @@ class ScanResult:
     rest_namespaces: List[str] = field(default_factory=list)
     requests_made: int = 0
     errors: List[str] = field(default_factory=list)
+    extra: Dict[str, Any] = field(default_factory=dict)  # server inventory: packages, libraries, integrity
 
     def component(self, type_: str, slug: str, name: Optional[str] = None) -> Component:
         key = f"{type_}:{slug}"
@@ -114,4 +117,5 @@ class ScanResult:
             "restNamespaces": self.rest_namespaces,
             "requestsMade": self.requests_made,
             "errors": self.errors,
+            **({"extra": self.extra} if self.extra else {}),
         }

@@ -83,3 +83,21 @@ def test_match_component_without_version_lists_all_as_unknown():
     comp = Component("plugin", "x")
     out = vullink.match_component(FakeClient([_row("A", ["<1.6"], ["1.6"])]), comp)
     assert [e["status"] for e in out] == ["unknown_version"]
+
+
+def test_wildcard_is_ignored_when_specific_ranges_exist():
+    # CVE-2007-2627: Wordfence "<=2.2" + NVD "*" (no bounds) must not flag WordPress 7.1.5
+    assert v.is_affected("7.1.5", ["<=2.2", "*"], [], ["2.2.1"]) is False
+    assert v.is_affected("2.1", ["<=2.2", "*"], [], ["2.2.1"]) is True
+
+
+def test_wildcard_only():
+    assert v.is_affected("1.0", ["*"], [], []) is True               # unpatched, all versions
+    assert v.is_affected("7.1.5", ["*"], [], ["2.2.1"]) is False     # fix is older than installed version
+    assert v.is_affected("2.0", ["*"], [], ["2.2.1"]) is True
+
+
+def test_vendor_scoping_keeps_untagged_wordfence_ranges():
+    row = {"ranges": ["<=2.2", "*"], "exact": [], "vendorRanges": ["wordpress|*"], "vendorVersions": []}
+    assert vullink._scope_to_vendors(row, ["wordpress"])
+    assert sorted(row["ranges"]) == ["*", "<=2.2"]

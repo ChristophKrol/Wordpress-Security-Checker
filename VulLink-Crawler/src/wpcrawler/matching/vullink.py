@@ -26,6 +26,8 @@ SERVER_PRODUCTS: Dict[str, List[Tuple[str, List[str]]]] = {
     "nginx": [("nginx", ["f5", "nginx"])],
     "php": [("php", ["php"])],
     "openlitespeed": [("openlitespeed", ["litespeedtech"])],
+    "mysql": [("mysql", ["oracle"])],
+    "mariadb": [("mariadb", ["mariadb"])],
     # "LiteSpeed" header can be either edition.
     "litespeed": [("litespeed_web_server", ["litespeedtech", "litespeed_technologies"]),
                   ("openlitespeed", ["litespeedtech"])],
@@ -83,15 +85,20 @@ class VulLinkClient:
 
 
 def _scope_to_vendors(row: Dict, vendors: List[str]) -> bool:
-    """Product names are shared across vendors (e.g. http_server). If the edge carries vendor-tagged
-    ranges, keep only this vendor's; drop the row if none of them belong to the vendor."""
-    tagged_ranges = row.get("vendorRanges") or []
-    tagged_versions = row.get("vendorVersions") or []
-    if not tagged_ranges and not tagged_versions:
-        return True  # source without vendor tags (e.g. Wordfence, which is product-specific anyway)
-    row["ranges"] = [r.split("|", 1)[1] for r in tagged_ranges if r.split("|", 1)[0] in vendors]
-    row["exact"] = [x.split("|", 1)[1] for x in tagged_versions if x.split("|", 1)[0] in vendors]
-    return bool(row["ranges"] or row["exact"])
+    """Product names are shared across vendors (e.g. http_server). NVD tags each range as "vendor|range";
+    remove ranges that only other vendors contributed, keep this vendor's and untagged ones (Wordfence).
+    Drops the row when nothing is left that applies to this vendor."""
+    tagged = [(t.split("|", 1)[0], t.split("|", 1)[1]) for t in (row.get("vendorRanges") or []) if "|" in t]
+    tagged_v = [(t.split("|", 1)[0], t.split("|", 1)[1]) for t in (row.get("vendorVersions") or []) if "|" in t]
+    if not tagged and not tagged_v:
+        return True
+    ours_r = {r for vd, r in tagged if vd in vendors}
+    ours_v = {x for vd, x in tagged_v if vd in vendors}
+    foreign_r = {r for vd, r in tagged if vd not in vendors} - ours_r
+    foreign_v = {x for vd, x in tagged_v if vd not in vendors} - ours_v
+    row["ranges"] = [r for r in (row.get("ranges") or []) if r not in foreign_r]
+    row["exact"] = [x for x in (row.get("exact") or []) if x not in foreign_v]
+    return bool(row["ranges"] or row["exact"] or ours_r or ours_v)
 
 
 def match_component(client: VulLinkClient, comp: Component) -> List[Dict]:
@@ -108,7 +115,7 @@ def match_component(client: VulLinkClient, comp: Component) -> List[Dict]:
 
     by_id: Dict[str, Dict] = {}
     for row in rows:
-        verdict = v.is_affected(version, row.get("ranges"), row.get("exact")) if version else None
+        verdict = v.is_affected(version, row.get("ranges"), row.get("exact"), row.get("patched")) if version else None
         entry = by_id.setdefault(row["id"], {
             "id": row["id"], "cve": row.get("cve"), "title": row.get("title"),
             "cvss": row.get("wfCvss") if row.get("wfCvss") is not None else row.get("nvdCvss"),

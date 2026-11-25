@@ -50,9 +50,18 @@ def in_range(version: str, range_expr: str) -> bool:
     return True
 
 
-def is_affected(version: str, ranges: Iterable[str], exact: Iterable[str]) -> Optional[bool]:
-    """True/False when the data allows a decision, None when there is no version data at all."""
-    ranges, exact = list(ranges or []), list(exact or [])
-    if not ranges and not exact:
-        return None
-    return any(compare(version, e) == 0 for e in exact) or any(in_range(version, r) for r in ranges)
+def is_affected(version: str, ranges: Iterable[str], exact: Iterable[str],
+                patched: Iterable[str] = ()) -> Optional[bool]:
+    """True/False when the data allows a decision, None when there is no version data at all.
+
+    "*" is ambiguous: Wordfence uses it for "all versions" (no fix), but NVD also emits it when a CPE has
+    no version bounds at all (common for old CVEs). So "*" is ignored whenever more specific ranges or
+    versions exist, and a "*"-only entry counts as fixed if a patched version <= the installed one is known.
+    """
+    ranges, exact, patched = list(ranges or []), list(exact or []), list(patched or [])
+    specific = [r for r in ranges if r.strip() not in ("*", "")]
+    if specific or exact:
+        return any(compare(version, e) == 0 for e in exact) or any(in_range(version, r) for r in specific)
+    if any(r.strip() == "*" for r in ranges):
+        return not any(compare(p, version) <= 0 for p in patched)
+    return None

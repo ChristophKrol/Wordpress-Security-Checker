@@ -30,7 +30,10 @@ def render(result: ScanResult, matched: bool, max_listed: int = 10) -> str:
         conf = f" [{c['versionConfidence']}]" if c["versionConfidence"] else ""
         conflict = f"  (also seen: {', '.join(c['versionConflicts'])})" if c["versionConflicts"] else ""
         name = f" - {c['name']}" if c["name"] and c["name"].lower() != c["slug"] else ""
-        out.append(f"  {c['type']:<7} {c['slug']}{name}: {ver}{conf}{conflict}")
+        d = c.get("details") or {}
+        status = f" ({d['status']})" if d.get("status") and d["status"] != "active" else ""
+        update = f"  -> update available: {d['updateVersion']}" if d.get("updateVersion") else ""
+        out.append(f"  {c['type']:<7} {c['slug']}{name}: {ver}{conf}{status}{conflict}{update}")
         for note in c.get("notes", []):
             out.append(f"          note: {note}")
     out.append("")
@@ -83,11 +86,35 @@ def render(result: ScanResult, matched: bool, max_listed: int = 10) -> str:
 
     out.append("Configuration findings")
     if not result.findings:
-        out.append("  none" + ("" if result.mode == "aggressive" else " (most checks need --aggressive)"))
+        out.append("  none" + ("" if result.mode in ("aggressive", "server-inventory") else " (most checks need --aggressive)"))
     for f in sorted(result.findings, key=lambda f: SEV_ORDER.get(f.severity, 9)):
         out.append(f"  [{f.severity.upper()}] {f.title} - {f.url}")
         if f.detail:
             out.append(f"         {f.detail}")
+
+    extra = result.extra or {}
+    if extra:
+        integrity = extra.get("integrity", {})
+        out += ["", "Integrity (checksums against wordpress.org)"]
+        if integrity.get("skipped"):
+            out.append("  skipped")
+        else:
+            core = integrity.get("core", {})
+            plugins = integrity.get("plugins", {})
+            out.append(f"  core:    {'OK' if core.get('ok') else 'MODIFIED - see findings'}"
+                       + (f" ({len(core.get('messages', []))} message(s))" if core.get("messages") else ""))
+            out.append(f"  plugins: {'OK' if plugins.get('ok') else 'see findings'}"
+                       " (only plugins from wordpress.org can be verified)")
+            out.append(f"  PHP files in uploads: {len(integrity.get('phpInUploads', []))}")
+        libs = extra.get("libraries", [])
+        if libs:
+            owners = sorted({lib["in"] for lib in libs})
+            out += ["", f"Bundled libraries: {len(libs)} Composer packages in {len(owners)} plugin(s)/theme(s)",
+                    "  not checked: VulLink has no source for PHP library advisories yet (see JSON 'extra.libraries')"]
+        pkgs = extra.get("packages", [])
+        if pkgs:
+            out += ["", "OS packages (versions incl. distro patch level):"]
+            out += [f"  {p['name']} {p['version']}" for p in pkgs[:15]]
 
     if result.rest_namespaces:
         out += ["", "REST API namespaces: " + ", ".join(result.rest_namespaces)]

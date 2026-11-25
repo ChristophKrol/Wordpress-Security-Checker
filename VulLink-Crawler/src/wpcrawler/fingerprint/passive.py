@@ -12,6 +12,8 @@ from ..http import Fetcher, Response
 from ..models import Evidence, Finding, ScanResult
 from . import parsers as p
 
+MAX_NAMESPACE_PROBES = 10
+
 
 def analyse_page(result: ScanResult, resp: Response) -> None:
     html = resp.text
@@ -33,7 +35,7 @@ def analyse_page(result: ScanResult, resp: Response) -> None:
             result.component("core", "wordpress", "WordPress").add(
                 Evidence("meta-generator", content[:120], ver, "high" if ver else "low"))
         elif name in p.GENERATOR_SLUGS:
-            result.component("plugin", p.GENERATOR_SLUGS[name], content.split(";")[0][:80]).add(
+            result.component("plugin", p.GENERATOR_SLUGS[name], p.generator_display_name(content)).add(
                 Evidence("meta-generator", content[:120], ver, "high" if ver else "low"))
 
     for slug, ver, text in p.comment_signatures(html):
@@ -85,18 +87,36 @@ def check_rest_api(result: ScanResult, fetcher: Fetcher, link_header: Optional[s
         return
     result.is_wordpress = True
     result.rest_namespaces = sorted(set(namespaces))
+    unknown = []
     for ns in namespaces:
         prefix = ns.split("/")[0].lower()
-        if prefix in p.CORE_NAMESPACES:
+        if prefix in p.CORE_NAMESPACES or prefix in p.GENERIC_NAMESPACES:
             continue
-        slug = p.REST_NAMESPACE_SLUGS.get(prefix)
-        if slug:
-            result.component("plugin", slug).add(Evidence("rest-namespace", ns, None, "low"))
+        if prefix in p.REST_NAMESPACE_SLUGS:
+            slug = p.REST_NAMESPACE_SLUGS[prefix]
+            if slug:
+                result.component("plugin", slug).add(Evidence("rest-namespace", ns, None, "low"))
+        elif p.clean_slug(prefix) and prefix not in unknown:
+            unknown.append(prefix)
+
+    # Unmapped namespaces often equal the plugin slug: confirm via readme.txt (the site announced them).
+    for prefix in unknown[:MAX_NAMESPACE_PROBES]:
+        if f"plugin:{prefix}" in result.components:
+            continue
+        resp = fetcher.get(f"/wp-content/plugins/{prefix}/readme.txt")
+        if resp and resp.ok:
+            name, stable, changelog = p.parse_readme(resp.text)
+            if name or stable or changelog:
+                comp = result.component("plugin", prefix, name)
+                comp.add(Evidence("rest-namespace", prefix, None, "medium"))
+                _add_readme_evidence(comp, resp.url, stable, changelog)
 
 
 def enrich_plugins(result: ScanResult, fetcher: Fetcher) -> None:
     """Fetch readme.txt of every plugin already seen; it usually states the installed version."""
     for comp in [c for c in result.components.values() if c.type == "plugin"]:
+        if any(e.source.startswith("readme") for e in comp.evidence):
+            continue  # already fetched (namespace probe / enumeration)
         resp = fetcher.get(f"/wp-content/plugins/{comp.slug}/readme.txt")
         if not (resp and resp.ok):
             continue
@@ -104,13 +124,17 @@ def enrich_plugins(result: ScanResult, fetcher: Fetcher) -> None:
         if not (name or stable or changelog):
             continue
         comp.name = comp.name or name
-        if stable and changelog and stable == changelog:
-            comp.add(Evidence("readme.txt", resp.url, stable, "high"))
-        else:
-            if stable:
-                comp.add(Evidence("readme.txt:stable-tag", resp.url, stable, "medium"))
-            if changelog:
-                comp.add(Evidence("readme.txt:changelog", resp.url, changelog, "medium"))
+        _add_readme_evidence(comp, resp.url, stable, changelog)
+
+
+def _add_readme_evidence(comp, url: str, stable, changelog) -> None:
+    if stable and changelog and stable == changelog:
+        comp.add(Evidence("readme.txt", url, stable, "high"))
+    else:
+        if stable:
+            comp.add(Evidence("readme.txt:stable-tag", url, stable, "medium"))
+        if changelog:
+            comp.add(Evidence("readme.txt:changelog", url, changelog, "medium"))
 
 
 def enrich_themes(result: ScanResult, fetcher: Fetcher) -> None:

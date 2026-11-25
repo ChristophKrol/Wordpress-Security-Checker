@@ -71,8 +71,14 @@ REST_NAMESPACE_SLUGS = {
     "regenerate-thumbnails": "regenerate-thumbnails", "give-api": "give", "learnpress": "learnpress",
     "tutor": "tutor", "mailpoet": "mailpoet", "fluentform": "fluentform", "forminator": "forminator",
     "wp-rocket": "wp-rocket", "real-cookie-banner": "real-cookie-banner", "borlabs-cookie": "borlabs-cookie",
+    "code-snippets": "code-snippets", "hfe": "header-footer-elementor", "elementor-pro": "elementor-pro",
+    "elementor-ai": "elementor", "elementor-one": "elementor", "jltma": "master-addons",
+    "master-addons": "master-addons", "masteraddons": "master-addons", "trustindex": "wp-reviews-plugin-for-google",
+    "wp-statistics": "wp-statistics", "astra": None, "nps-survey": None,  # None: theme / bundled library
 }
 CORE_NAMESPACES = {"oembed", "wp", "wp-site-health", "wp-block-editor", "wp-abilities", "batch"}
+# Too generic to be a plugin slug; never probed.
+GENERIC_NAMESPACES = {"v1", "v2", "v3", "api", "mcp", "rest", "public", "app", "data"}
 
 
 def clean_slug(raw: str) -> Optional[str]:
@@ -152,6 +158,13 @@ def parse_generator(content: str) -> Tuple[str, Optional[str]]:
     if m:
         return m.group(1).strip().lower(), clean_version(m.group(2))
     return first.lower(), None
+
+
+def generator_display_name(content: str) -> str:
+    """'Elementor 4.4.0; features: ...' -> 'Elementor' (original capitalisation, version stripped)."""
+    first = content.split(";")[0].strip()
+    m = re.match(r"^(.*?)[\s-]+v?(?:er:?\s*)?" + VERSION_RE + r"\b", first, re.I)
+    return (m.group(1) if m else first)[:80]
 
 
 def html_comments(html: str) -> List[str]:
