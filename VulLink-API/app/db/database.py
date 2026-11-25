@@ -8,8 +8,9 @@ from pathlib import Path
 
 # Load environment variables
 IS_LINUX = platform.system().lower() == "linux"
-env_path = Path(__file__).resolve().parent.parent.parent / ".env.development"
-load_dotenv(dotenv_path=env_path)
+api_dir = Path(__file__).resolve().parent.parent.parent
+for env_name in (".env", ".env.development"):  # .env wins; .env.development kept for old setups
+    load_dotenv(dotenv_path=api_dir / env_name)
 if IS_LINUX:
     load_dotenv()
 
@@ -18,8 +19,8 @@ class Neo4jDatabase:
         uri = os.getenv("NEO4J_URI")
         user = os.getenv("NEO4J_USER")
         password = os.getenv("NEO4J_PASSWORD")
-        assert uri and user and password, f"Credentials information uri={uri}, user={user}, password={password} must exists"
-        print(f"Connecting to Neo4j at {uri} with user {user} and password {password}")
+        assert uri and user and password, "NEO4J_URI, NEO4J_USER and NEO4J_PASSWORD must be set"
+        logging.info(f"Connecting to Neo4j at {uri} as {user}")
         try:
             self.driver = GraphDatabase.driver(uri, auth=(user, password))
             # Test connection

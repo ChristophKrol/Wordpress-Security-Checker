@@ -397,7 +397,7 @@ if __name__ == "__main__":
         logger.info("Initializing Neo4j driver")
         driver = neo4j.GraphDatabase.driver(
             "bolt://localhost:7687",
-            auth=("neo4j", "Vanly180705!")
+            auth=("neo4j", os.environ["NEO4J_PASSWORD"])
         )
 
         # Optional connectivity check

@@ -1,3 +1,4 @@
+import os
 import neo4j
 from database_schema import CONSTRAINTS, INDEXES
 from edb_pipeline import EDBPipeline
@@ -32,7 +33,7 @@ def main():
     # Create Neo4j driver
     driver = neo4j.GraphDatabase.driver(
         "bolt://localhost:7687",
-        auth=("neo4j", "Vanly180705!")
+        auth=("neo4j", os.environ["NEO4J_PASSWORD"])
     )
     
     try:

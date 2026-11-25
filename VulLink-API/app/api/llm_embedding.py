@@ -16,8 +16,9 @@ MODEL_OPTIONS = ["mpnet", "secbert", "fasttext"]
 
 IS_LINUX = platform.system().lower() == "linux"
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "")
-env_path = Path(__file__).resolve().parent.parent.parent / ".env.development"
-load_dotenv(dotenv_path=env_path)
+api_dir = Path(__file__).resolve().parent.parent.parent
+for env_name in (".env", ".env.development"):  # .env wins; .env.development kept for old setups
+    load_dotenv(dotenv_path=api_dir / env_name)
 if IS_LINUX:
     load_dotenv()
 

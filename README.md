@@ -42,7 +42,7 @@ VulLink/
 ├── VulLink-Data-Pipeline/
 ├── VulLink-Crawler/
 ├── VulLink-Visualizer/
-├── .env.development
+├── .env.example
 └── docker-compose.yml
 ```
 
@@ -88,7 +88,15 @@ To deploy VulLink locally, install:
 
 ## 1. Configure Environment Variables
 
-Create a `.env` file in the repository root.
+Copy the templates and set your own Neo4j password in each (`.env` files are git-ignored):
+
+```bash
+cp .env.example .env
+cp VulLink-API/.env.example VulLink-API/.env
+cp VulLink-Visualizer/.env.example VulLink-Visualizer/.env
+```
+
+The repository-root `.env` needs at least:
 
 ```env
 REACT_APP_NEO4J_URL=bolt://localhost:7687
@@ -156,13 +164,13 @@ pip install -r requirements.txt
 Start the API:
 
 ```bash
-npx dotenv-cli -e ..\.env.development -- uvicorn app.main:app --reload
+npx dotenv-cli -e ../.env -- uvicorn app.main:app --reload
 ```
 
 Run endpoint tests:
 
 ```bash
-npx dotenv-cli -e ..\.env.development -- python tests/test_endpoints.py
+npx dotenv-cli -e ../.env -- python tests/test_endpoints.py
 ```
 
 ---
@@ -174,7 +182,7 @@ cd VulLink-Visualizer
 
 npm install
 
-npx dotenv-cli -e ..\.env.development -- npm start
+npx dotenv-cli -e ../.env -- npm start
 ```
 
 ---

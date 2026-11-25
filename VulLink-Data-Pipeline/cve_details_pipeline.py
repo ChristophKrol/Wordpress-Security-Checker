@@ -655,7 +655,7 @@ class CVEDetailsPipeline:
             """)
 
 if __name__ == "__main__":
-    neo4j_driver = neo4j.GraphDatabase.driver(uri="bolt://localhost:7687", auth=("neo4j", "Vanly180705!"))
+    neo4j_driver = neo4j.GraphDatabase.driver(uri="bolt://localhost:7687", auth=("neo4j", os.environ["NEO4J_PASSWORD"]))
     cve_details_pipeline = CVEDetailsPipeline(neo4j_driver)
     cve_details_pipeline.run()
     # cve_details_pipeline.migrate_data()

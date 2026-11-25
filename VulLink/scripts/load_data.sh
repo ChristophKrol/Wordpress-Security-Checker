@@ -2,7 +2,7 @@
 
 # Set Variables
 PROJECT_DIR=/home/ubuntu/VulGD-Dynamic-Database
-ENV_FILE=$PROJECT_DIR/.env.development
+ENV_FILE=$PROJECT_DIR/.env
 VULGD_DATA_DIR=$PROJECT_DIR/data/vulkg
 NEO4J_IMPORT=/var/lib/neo4j/import
 NEO4J_CONF=/etc/neo4j/neo4j.conf

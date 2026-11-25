@@ -659,7 +659,7 @@ class NVDPipeline:
 def main():
     driver = neo4j.GraphDatabase.driver(
         "bolt://localhost:7687",
-        auth=("neo4j", "Vanly180705!")
+        auth=("neo4j", os.environ["NEO4J_PASSWORD"])
     )
     # assert_neo4j_connection(driver)
 
