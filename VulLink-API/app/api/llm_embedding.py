@@ -25,6 +25,8 @@ if IS_LINUX:
     DATA_DIR = os.getenv("DATA_DIR_LINUX")
 else:
     DATA_DIR = os.getenv("DATA_DIR_WINDOWS")
+# Allow an explicit override; fall back to ./data so the API can start without embeddings
+DATA_DIR = os.getenv("DATA_DIR", DATA_DIR) or "data"
 
 DIM128_EMBEDDING = "embeddings/128"
 DIM32_EMBEDDING = "embeddings/32"
@@ -34,9 +36,9 @@ DIM128_EMBEDDING_DIR = os.path.join(DATA_DIR, DIM128_EMBEDDING)
 DIM32_EMBEDDING_DIR = os.path.join(DATA_DIR, DIM32_EMBEDDING)
 CVEIDS_LIST_PATH = os.path.join(DATA_DIR, CVEIDS_LIST)
 
-assert os.path.exists(DIM128_EMBEDDING_DIR), f"{DIM128_EMBEDDING_DIR} does not exists"
-assert os.path.exists(DIM32_EMBEDDING_DIR), f"{DIM32_EMBEDDING_DIR} does not exists"
-assert os.path.exists(CVEIDS_LIST_PATH), f"{CVEIDS_LIST_PATH} does not exists"
+for _p in (DIM128_EMBEDDING_DIR, DIM32_EMBEDDING_DIR, CVEIDS_LIST_PATH):
+    if not os.path.exists(_p):
+        print(f"WARNING: {_p} does not exist - embedding endpoint will be unavailable")
 
 dim32_data: Dict[str, np.ndarray] = {}
 dim128_data: Dict[str, np.ndarray] = {}
