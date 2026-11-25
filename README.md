@@ -96,28 +96,51 @@ cp VulLink-API/.env.example VulLink-API/.env
 cp VulLink-Visualizer/.env.example VulLink-Visualizer/.env
 ```
 
-The repository-root `.env` needs at least:
-
-```env
-REACT_APP_NEO4J_URL=bolt://localhost:7687
-REACT_APP_NEO4J_USER=neo4j
-REACT_APP_NEO4J_PASSWORD=your_password
-REACT_APP_BACKEND_URL=http://localhost:8000
-```
+Use the same Neo4j password in all three files. The root `.env` also holds the API keys for the data
+sources (`NVD_API_KEY`, `WORDFENCE_API_KEY`); see the comments in `.env.example`.
 
 ## 2. Launch the Full Stack
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
 ```
+
+This starts Neo4j, the API and the frontend. After a reboot, `docker compose up -d` starts them again.
 
 ### Access Points
 
 | Service | URL |
 |---------|-----|
-| Public Deployment | http://34.129.106.249/ |
 | Local Frontend | http://localhost |
-| API Documentation | http://localhost:8000/docs |
+| API Documentation | http://localhost:8001/docs |
+| Neo4j Browser (user `neo4j`, password from `.env`) | http://localhost:7474 |
+| Public Deployment (original authors) | http://34.129.106.249/ |
+
+## 3. Load Vulnerability Data
+
+The database starts empty. Load Wordfence and the WordPress-relevant part of NVD (first run takes
+about 10 minutes; later runs only fetch changes):
+
+```bash
+cd VulLink-Data-Pipeline
+python3 -m venv .venv && .venv/bin/pip install -r sources/requirements.txt
+.venv/bin/python -m sources.run all
+```
+
+Details, options and the schema additions: `VulLink-Data-Pipeline/README.md` (section "API source connectors").
+Example queries: `VulLink-Data-Pipeline/sources/example_queries.cypher`.
+
+## 4. Scan a WordPress Site with the Crawler
+
+```bash
+cd VulLink-Crawler
+python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"     # once
+.venv/bin/wpcrawler scan https://your-site.com                  # detect + match against VulLink
+.venv/bin/wpcrawler scan https://your-site.com --json result.json
+```
+
+Only scan sites you own or have permission to test. `--aggressive --authorized` adds plugin enumeration
+and configuration checks. All options: `.venv/bin/wpcrawler scan --help` and `VulLink-Crawler/README.md`.
 
 ---
 
